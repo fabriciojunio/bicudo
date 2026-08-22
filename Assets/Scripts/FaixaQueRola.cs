@@ -29,11 +29,16 @@ public class FaixaQueRola : MonoBehaviour
     [Tooltip("X em que a peça volta para o fim da fila. Tem que estar fora da tela.")]
     public float limiteEsquerdo = -8f;
 
+    [Tooltip("Sobra além da borda da tela, para a troca não encostar no canto.")]
+    public float folgaForaDaTela = 2f;
+
     Partida partida;
+    float meiaConhecida;
 
     void Start()
     {
         partida = Partida.Atual;
+        meiaConhecida = Enquadramento.MeiaLargura();
         if (ajustarPelaCamera) Enquadrar();
     }
 
@@ -54,7 +59,7 @@ public class FaixaQueRola : MonoBehaviour
         float meia = Enquadramento.MeiaLargura();
         float alcance = largura * pecas.Length;
 
-        limiteEsquerdo = -(meia + largura);
+        limiteEsquerdo = -(meia + largura + folgaForaDaTela);
 
         // Do limite para a direita a fila cobre o alcance dela. Se for curta
         // demais para a tela, empurrar o limite só troca o buraco de lado.
@@ -92,6 +97,13 @@ public class FaixaQueRola : MonoBehaviour
 
     void Update()
     {
+        // O mesmo executável abre num monitor ultrawide e num notebook, e a
+        // janela muda de tamanho no meio da partida. Refazer a conta aqui é o
+        // que faz o cenário se arrumar sozinho em vez de ficar preso na
+        // proporção que existia na abertura. Realinhar não aparece: as peças
+        // são iguais entre si.
+        if (ajustarPelaCamera && Enquadramento.Mudou(ref meiaConhecida)) Enquadrar();
+
         if (!PodeRolar()) return;
         if (pecas == null || pecas.Length == 0 || largura <= 0.01f) return;
 

@@ -73,9 +73,13 @@ funcionaria, mas dá trabalho ao coletor de lixo justamente durante o jogo, que
 A altura que a câmera enxerga é escolhida por nós; a largura sai da proporção
 da tela, que só existe quando o jogo roda. Por isso o ponto em que o cano troca
 de lugar e o ponto em que a peça de chão volta para o fim da fila são
-calculados no `Start`, e não fixados na cena. Com eles fixos, a troca caía
-dentro do campo de visão: o chão sumia pela borda e o cano reaparecia do nada
-à frente do pássaro.
+calculados ao rodar, e não fixados na cena. Com eles fixos, a troca caía dentro
+do campo de visão: o chão sumia pela borda e o cano reaparecia do nada à frente
+do pássaro.
+
+A medida é refeita sempre que a tela muda, e não só na abertura. O mesmo
+executável abre num ultrawide e num notebook, e a janela pode virar tela cheia
+no meio da partida.
 
 ## Som
 

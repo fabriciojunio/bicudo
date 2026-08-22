@@ -50,6 +50,7 @@ public class GeradorDeCanos : MonoBehaviour
 
     readonly List<Cano> pares = new List<Cano>();
     Partida partida;
+    float meiaConhecida;
 
     /// <summary>Os pares em circulação. Usado pelos testes.</summary>
     public IReadOnlyList<Cano> Pares => pares;
@@ -58,6 +59,8 @@ public class GeradorDeCanos : MonoBehaviour
     {
         partida = Partida.Atual;
         if (partida != null) partida.Mudou += AoMudarEstado;
+
+        meiaConhecida = Enquadramento.MeiaLargura();
 
         // antes de criar a fila: o enquadramento é que diz de quantos pares
         // ela precisa
@@ -97,6 +100,13 @@ public class GeradorDeCanos : MonoBehaviour
         if (estado == EstadoDaPartida.Esperando) Recolher();
     }
 
+    /// <summary>
+    /// Completa a fila até a quantidade pedida.
+    ///
+    /// Roda também no meio da partida, quando a janela cresce e passa a caber
+    /// mais cano na tela. Por isso o par novo nasce atrás do último da fila, e
+    /// não na origem: nascendo em zero ele apareceria em cima do pássaro.
+    /// </summary>
     void Criar()
     {
         if (modelo == null) return;
@@ -105,8 +115,18 @@ public class GeradorDeCanos : MonoBehaviour
         {
             var novo = Instantiate(modelo, transform);
             novo.name = $"Cano_{i}";
+            novo.transform.localPosition = new Vector3(FimDaFila() + espacamento, 0f, 0f);
+            novo.Armar(AlturaSorteada());
             pares.Add(novo);
         }
+    }
+
+    /// <summary>X do último par da fila, ou a entrada se a fila estiver vazia.</summary>
+    float FimDaFila()
+    {
+        float maior = float.MinValue;
+        foreach (var p in pares) maior = Mathf.Max(maior, p.transform.localPosition.x);
+        return maior > float.MinValue ? maior : xDeEntrada - espacamento;
     }
 
     /// <summary>
@@ -133,6 +153,16 @@ public class GeradorDeCanos : MonoBehaviour
 
     void Update()
     {
+        // A tela pode mudar no meio da partida, por troca de janela ou de tela
+        // cheia. Refazer a conta mantém a entrada e a saída dos canos fora do
+        // campo de visão, que é a única coisa que o jogador enxergaria se
+        // ficasse errada.
+        if (ajustarPelaCamera && Enquadramento.Mudou(ref meiaConhecida))
+        {
+            Enquadrar();
+            Criar();
+        }
+
         if (partida == null || partida.Estado != EstadoDaPartida.Voando) return;
 
         foreach (var p in pares)

@@ -294,6 +294,37 @@ public class VooTests
             "o primeiro cano ficou esperando na borda de entrada");
     }
 
+    [UnityTest]
+    public IEnumerator Gerador_QuandoATelaMuda_AlargaAsBordasECresceAFila()
+    {
+        CenarioDeTeste.CriarPartida();
+        var cam = CenarioDeTeste.CriarCamera(meiaAltura: 7f, proporcao: 16f / 9f);
+
+        var modelo = CenarioDeTeste.CriarCano(new Vector2(100f, 0f));
+        var g = CenarioDeTeste.CriarGerador(modelo);
+        g.ajustarPelaCamera = true;
+        yield return null;
+
+        int paresNoNotebook = g.Pares.Count;
+        float saidaNoNotebook = g.xDeSaida;
+
+        cam.aspect = 21f / 9f;
+        yield return null;
+
+        Assert.Less(g.xDeSaida, saidaNoNotebook,
+            "a saída dos canos não acompanhou a tela mais larga");
+        Assert.Greater(g.Pares.Count, paresNoNotebook,
+            "a fila não cresceu: sobraria trecho de tela sem cano nenhum");
+        Assert.GreaterOrEqual(g.quantidade * g.espacamento, g.xDeEntrada - g.xDeSaida,
+            "a fila cresceu, mas não o bastante para o par reposto cair fora da tela");
+
+        // O par acrescentado nasce atrás do último da fila. Nascendo na origem
+        // ele apareceria em cima do pássaro, que é onde a origem fica.
+        foreach (var c in g.Pares)
+            Assert.Greater(c.transform.localPosition.x, 0f,
+                "cano novo nasceu na origem, em cima do pássaro");
+    }
+
     // ----------------------------------------------------------------- cenário
 
     [UnityTest]
@@ -339,6 +370,41 @@ public class VooTests
                 "abriu vazio na borda esquerda da tela");
             Assert.GreaterOrEqual(f.BordaDireita(), meia - 0.01f,
                 "abriu vazio na borda direita da tela");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Faixa_QuandoATelaMuda_RefazAConta()
+    {
+        // O mesmo executável roda no ultrawide de casa e no notebook da
+        // apresentação, e a janela pode virar tela cheia no meio da partida.
+        // Medir só na abertura deixaria o cenário com a conta da tela antiga.
+        var partida = CenarioDeTeste.CriarPartida();
+        var cam = CenarioDeTeste.CriarCamera(meiaAltura: 7f, proporcao: 16f / 9f);
+
+        var f = CenarioDeTeste.CriarFaixa(quantasPecas: 6, largura: 40f);
+        f.ajustarPelaCamera = true;
+        f.velocidade = 40f;
+        yield return null;
+
+        float limiteEstreito = f.limiteEsquerdo;
+
+        cam.aspect = 21f / 9f;            // como trocar de notebook para ultrawide
+        yield return null;
+
+        Assert.Less(f.limiteEsquerdo, limiteEstreito - 1f,
+            "a faixa continuou com a conta da tela antiga");
+
+        partida.Comecar();
+        float meia = Enquadramento.MeiaLargura();
+
+        for (float t = 0f; t < 3f; t += Time.deltaTime)
+        {
+            yield return null;
+            Assert.LessOrEqual(f.BordaEsquerda(), -meia + 0.01f,
+                "abriu vazio à esquerda depois de a tela mudar");
+            Assert.GreaterOrEqual(f.BordaDireita(), meia - 0.01f,
+                "abriu vazio à direita depois de a tela mudar");
         }
     }
 

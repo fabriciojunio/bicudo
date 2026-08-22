@@ -196,6 +196,13 @@ Se ainda assim a fila for curta demais para a tela, a faixa avisa no console em
 vez de falhar calada, porque o sintoma é o cenário piscando na borda e nada
 apontando para a causa.
 
+A conta não é feita uma vez só. O mesmo executável abre num monitor ultrawide e
+num notebook, e a janela pode virar tela cheia no meio da partida. Canos e
+faixas comparam a meia largura a cada quadro e refazem o enquadramento quando
+ela muda: as bordas se alargam, a fila de canos cresce se precisar, e as peças
+de cenário se realinham. Realinhar não aparece na tela, porque as peças são
+iguais entre si.
+
 ## 9. Áudio
 
 Quatro efeitos, gerados por síntese quando o jogo acorda: bater de asa, ponto,
