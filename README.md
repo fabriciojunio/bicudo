@@ -7,7 +7,34 @@ sozinho, sobe quando você manda, e o jogo acaba no primeiro encostão.
 
 **Autor:** Fabrício Júnio Almeida Dias
 
-## Como abrir
+![O jogo em andamento](Capturas/voo.png)
+
+## Baixar e jogar
+
+Baixe o `Bicudo-Windows.zip` na página de
+[**Releases**](https://github.com/fabriciojunio/bicudo/releases/latest),
+extraia a pasta e execute **`Bicudo.exe`**. Não é preciso instalar mais nada.
+
+> Se o Windows mostrar o aviso "O Windows protegeu o seu computador", clique
+> em **Mais informações** e depois em **Executar assim mesmo**. Isso acontece
+> porque o executável não tem assinatura digital paga, e não porque haja algo
+> de errado com o arquivo.
+
+## Requisitos
+
+| | |
+|---|---|
+| Sistema | Windows 10 ou 11, 64 bits |
+| Processador | Dual core 2.0 GHz |
+| Memória | 2 GB de RAM |
+| Vídeo | Placa integrada com suporte a DirectX 11 |
+| Espaço | 100 MB livres |
+
+O jogo assume a resolução do monitor onde for aberto e se ajusta sozinho à
+proporção, de 4:3 a ultrawide. Trocar de tela ou redimensionar a janela no meio
+da partida também funciona.
+
+## Abrir o projeto na engine
 
 1. Instale o **Unity 2022.3.62f3** pelo Unity Hub.
 2. No Unity Hub, clique em **Add** e aponte para a pasta deste projeto.
@@ -91,15 +118,24 @@ A escolha não é só técnica. Os dois pacotes de arte usados aqui são de imag
 trazer som de terceiros significaria uma terceira licença para conferir e
 creditar, num jogo em que quatro bipes resolvem.
 
-## Testes
+## O script de montagem
 
-Rodam pelo Unity Test Framework, em EditMode e PlayMode.
+O `montar.ps1` faz o caminho inteiro sem abrir o editor. Ele precisa do Unity
+2022.3.62f3 instalado no caminho padrão do Unity Hub.
 
 ```powershell
-.\montar.ps1 -SoTestes
+.\montar.ps1            # monta o jogo e roda os testes
+.\montar.ps1 -SoTestes  # só roda os testes
+.\montar.ps1 -Build     # monta, testa e gera Build/Bicudo.exe
 ```
 
-Ou pelo editor: **Window → General → Test Runner**.
+O `.exe` só é gerado com `-Build`. Sem a opção o script imprime "Tudo certo"
+depois de montar e testar, e é fácil confundir isso com executável novo.
+
+## Testes
+
+São 46, pelo Unity Test Framework: 8 em EditMode e 38 em PlayMode. Rodam com
+`.\montar.ps1 -SoTestes` ou pelo editor, em **Window → General → Test Runner**.
 
 Os grupos são três:
 
@@ -115,6 +151,11 @@ Os grupos são três:
   toque começa a partida, os canos andam, e o pássaro morre no chão. É o que
   pega referência não ligada e objeto fora da camada, que os testes de
   cenário montado à mão não veem.
+
+Este último grupo nasceu de um defeito que passou por toda a suíte: o placar
+ficava a partida inteira em zero enquanto os testes de então chamavam o método
+de pontuar direto e passavam verdes. Teste que não exercita o mesmo caminho do
+jogo mede outra coisa.
 
 ## Créditos de arte
 
@@ -147,5 +188,7 @@ Assets/
     Sons           efeitos gerados por síntese
     UI/            a tela, nos três estados
   Tests/        EditMode e PlayMode
+Capturas/       imagens usadas neste arquivo
 docs/           GDD
+montar.ps1      monta, testa e gera o executável
 ```

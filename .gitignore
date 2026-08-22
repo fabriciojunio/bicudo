@@ -38,14 +38,14 @@ crashlytics-build.properties
 .DS_Store
 Thumbs.db
 
-# Capturas geradas para conferencia visual
-/[Cc]apturas/
-
 # Resultados de teste
 /Logs/
 
 # Cenas temporarias criadas pelo Test Runner
 /[Aa]ssets/InitTestScene*
 
-# Pacote de distribuicao (vai para o Releases, nao para o repo)
-Kaida-Windows.zip
+# Pacote de distribuicao: vai para o Releases, nao para o repo
+/Bicudo-Windows.zip
+
+# Capturas de trabalho na raiz. As de documentacao ficam em Capturas/
+/tela*.png
