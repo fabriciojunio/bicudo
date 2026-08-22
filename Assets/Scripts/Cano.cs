@@ -11,16 +11,13 @@ using UnityEngine;
 public class Cano : MonoBehaviour
 {
     [Tooltip("Metade da abertura, em unidades. A passagem inteira é o dobro disto.")]
-    public float meiaAbertura = 1.35f;
+    public float meiaAbertura = 2.5f;
 
     [Tooltip("O cano de cima, que desce do teto.")]
     public Transform canoDeCima;
 
     [Tooltip("O cano de baixo, que sobe do chão.")]
     public Transform canoDeBaixo;
-
-    [Tooltip("Gatilho que conta o ponto quando o pássaro atravessa.")]
-    public Collider2D portaria;
 
     /// <summary>Verdadeiro depois que o pássaro já passou e o ponto foi contado.</summary>
     public bool JaPontuou { get; private set; }
@@ -44,23 +41,15 @@ public class Cano : MonoBehaviour
     /// <summary>
     /// Marca o ponto uma vez só.
     ///
-    /// O gatilho da portaria fica dentro da passagem, e o pássaro pode entrar
-    /// e sair dele mais de uma vez subindo e descendo no mesmo vão. Sem esta
-    /// trava, um voo trêmulo no meio do cano valeria vários pontos.
+    /// Quem chama é o gerador, comparando a posição do cano com a do pássaro.
+    /// A primeira versão usava um gatilho no meio da passagem, e ele nunca
+    /// disparou: o pássaro não tem colisor, porque detecta batida por consulta
+    /// de círculo. Gatilho precisa de colisor dos dois lados.
     /// </summary>
     public bool TentarPontuar()
     {
         if (JaPontuou) return false;
         JaPontuou = true;
         return true;
-    }
-
-    void OnTriggerEnter2D(Collider2D outro)
-    {
-        if (outro.GetComponent<Passaro>() == null) return;
-        if (!TentarPontuar()) return;
-
-        Partida.Atual?.Pontuar();
-        Sons.Instancia?.Pontuou();
     }
 }

@@ -12,14 +12,14 @@ public class GeradorDeCanos : MonoBehaviour
 {
     [Header("Ritmo")]
     [Tooltip("Distância entre um par e o seguinte, em unidades.")]
-    public float espacamento = 3.6f;
+    public float espacamento = 4.2f;
 
     [Tooltip("Velocidade com que os canos vêm na direção do pássaro.")]
     public float velocidade = 3.2f;
 
     [Header("Abertura")]
     [Tooltip("Altura mais baixa em que o centro da passagem pode cair.")]
-    public float alturaMinima = -1.6f;
+    public float alturaMinima = -1f;
 
     [Tooltip("Altura mais alta em que o centro da passagem pode cair.")]
     public float alturaMaxima = 2.2f;
@@ -32,6 +32,9 @@ public class GeradorDeCanos : MonoBehaviour
     public float xDeSaida = -7f;
 
     public Cano modelo;
+
+    [Tooltip("Quem atravessa. O ponto conta quando o cano passa dele.")]
+    public Transform passaro;
 
     [Tooltip("Quantos pares circulam. Precisa cobrir a tela mais um de folga.")]
     public int quantidade = 6;
@@ -101,8 +104,29 @@ public class GeradorDeCanos : MonoBehaviour
 
             p.transform.localPosition += Vector3.left * velocidade * Time.deltaTime;
 
+            ConferirPonto(p);
+
             if (p.transform.localPosition.x < xDeSaida) Reciclar(p);
         }
+    }
+
+    /// <summary>
+    /// Conta o ponto quando o cano fica para trás do pássaro.
+    ///
+    /// A primeira versão punha um gatilho no meio da passagem e esperava o
+    /// pássaro entrar nele. Nunca disparou: o pássaro não tem colisor, porque
+    /// detecta batida por consulta de círculo, e gatilho exige colisor dos dois
+    /// lados. Comparar posição não depende de física nenhuma e é o mesmo
+    /// critério que o jogador enxerga - o cano passou, o ponto veio.
+    /// </summary>
+    void ConferirPonto(Cano p)
+    {
+        if (passaro == null || p.JaPontuou) return;
+        if (p.transform.position.x >= passaro.position.x) return;
+        if (!p.TentarPontuar()) return;
+
+        Partida.Atual?.Pontuar();
+        Sons.Instancia?.Pontuou();
     }
 
     /// <summary>Manda o par para trás do último da fila, com abertura nova.</summary>

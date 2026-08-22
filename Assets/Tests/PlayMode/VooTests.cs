@@ -142,9 +142,9 @@ public class VooTests
         yield return null;
         partida.Comecar();
 
-        // O gatilho da portaria ocupa a passagem inteira, e o pássaro pode
-        // entrar e sair dele subindo e descendo no mesmo vão. Sem trava, um
-        // voo trêmulo valeria vários pontos no mesmo cano.
+        // A trava existe porque o gerador confere posição a cada quadro: sem
+        // ela, o mesmo cano contaria ponto em todos os quadros em que estiver
+        // atrás do pássaro.
         Assert.IsTrue(cano.TentarPontuar(), "a primeira passagem vale ponto");
         Assert.IsFalse(cano.TentarPontuar(), "a segunda no mesmo cano não vale");
         Assert.IsFalse(cano.TentarPontuar());
@@ -206,6 +206,50 @@ public class VooTests
         foreach (var p in g.Pares)
             Assert.GreaterOrEqual(p.transform.localPosition.x, g.xDeEntrada - 0.01f,
                 "sobrou cano na tela depois de reiniciar");
+    }
+
+    [UnityTest]
+    public IEnumerator Gerador_ContaOPontoQuandoOCanoPassaOPassaro()
+    {
+        // O teste que faltava. A primeira versão contava ponto por gatilho e
+        // nunca disparou, porque o pássaro não tem colisor. Os testes de então
+        // chamavam TentarPontuar direto e passavam, enquanto o jogo montado
+        // ficava a partida inteira em zero.
+        var partida = CenarioDeTeste.CriarPartida();
+        var passaro = CenarioDeTeste.CriarPassaro(new Vector2(0f, 1f));
+        var modelo = CenarioDeTeste.CriarCano(new Vector2(100f, 0f));
+        var g = CenarioDeTeste.CriarGerador(modelo, passaro.transform);
+        g.velocidade = 12f;
+        yield return null;
+
+        partida.Comecar();
+        Assert.AreEqual(0, partida.Pontos);
+
+        for (float t = 0f; t < 3f && partida.Pontos == 0; t += Time.deltaTime)
+            yield return null;
+
+        Assert.Greater(partida.Pontos, 0,
+            "os canos passaram pelo pássaro e o placar continuou zerado");
+    }
+
+    [UnityTest]
+    public IEnumerator Gerador_NaoContaOMesmoCanoDuasVezes()
+    {
+        var partida = CenarioDeTeste.CriarPartida();
+        var passaro = CenarioDeTeste.CriarPassaro(new Vector2(0f, 1f));
+        var modelo = CenarioDeTeste.CriarCano(new Vector2(100f, 0f));
+        var g = CenarioDeTeste.CriarGerador(modelo, passaro.transform);
+        g.quantidade = 1;
+        g.velocidade = 6f;
+        yield return null;
+
+        partida.Comecar();
+        for (float t = 0f; t < 2f; t += Time.deltaTime) yield return null;
+
+        // A conferência roda a cada quadro. Sem a trava, o mesmo cano contaria
+        // ponto em todos os quadros em que estivesse atrás do pássaro.
+        Assert.LessOrEqual(partida.Pontos, 2,
+            $"um cano só rendeu {partida.Pontos} pontos: a trava não segurou");
     }
 
     // ----------------------------------------------------------------- cenário

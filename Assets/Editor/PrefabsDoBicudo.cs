@@ -68,15 +68,6 @@ public static class PrefabsDoBicudo
         cano.canoDeCima = Lado(raiz.transform, "CanoDeCima", boca, corpo, paraCima: false);
         cano.canoDeBaixo = Lado(raiz.transform, "CanoDeBaixo", boca, corpo, paraCima: true);
 
-        // A portaria fica no meio da abertura, alta o bastante para o pássaro
-        // não passar por fora dela nem subindo nem descendo.
-        var portariaGO = new GameObject("Portaria");
-        portariaGO.transform.SetParent(raiz.transform, false);
-        var portaria = portariaGO.AddComponent<BoxCollider2D>();
-        portaria.isTrigger = true;
-        portaria.size = new Vector2(0.4f, 40f);
-        cano.portaria = portaria;
-
         PrefabUtility.SaveAsPrefabAsset(raiz, CaminhoCano);
         Object.DestroyImmediate(raiz);
     }

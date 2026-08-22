@@ -23,11 +23,6 @@ public static class BicudoBuild
         Debug.Log("[Bicudo] 3/3 gerando a cena");
         CenaDoBicudo.Gerar();
 
-        // O pássaro procura colisão por sobreposição e a portaria do cano é um
-        // gatilho. Sem isto, as consultas ignoram gatilhos e o ponto nunca é
-        // contado, mesmo com o pássaro atravessando a passagem.
-        Physics2D.queriesHitTriggers = true;
-
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[Bicudo] PRONTO - jogo montado.");

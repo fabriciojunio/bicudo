@@ -31,6 +31,9 @@ public static class CenaDoBicudo
         MontarChao();
         var passaro = MontarPassaro();
         var canos = MontarCanos();
+        // sem isto o gerador não sabe quando o cano ficou para trás, e o
+        // placar nunca sai do zero
+        if (canos != null && passaro != null) canos.passaro = passaro.transform;
         MontarSistemas(passaro, canos);
 
         EditorSceneManager.SaveScene(cena, CenaJogo);
@@ -111,27 +114,31 @@ public static class CenaDoBicudo
 
         if (sprite != null)
         {
-            const int PorPeca = 24;
+            // A largura da peça tem que passar da metade da tela.
+            //
+            // A reposição devolve a peça para o fim da fila assim que ela anda
+            // uma largura para a esquerda, então a peça mais à esquerda nunca
+            // fica além de -largura. Com peça de 24 e uma tela 21:9, que
+            // enxerga 16,6 para cada lado, sobrava um pedaço sem chão na borda
+            // esquerda. Quarenta cobre até 32:9.
+            const int PorPeca = 40;
             var pecas = new Transform[2];
 
             for (int p = 0; p < pecas.Length; p++)
             {
                 var peca = new GameObject("Faixa_" + p);
                 peca.transform.SetParent(raiz.transform, false);
-                peca.transform.localPosition = new Vector3(p * PorPeca - PorPeca * 0.5f, 0f, 0f);
+                peca.transform.localPosition = new Vector3(p * PorPeca - PorPeca, 0f, 0f);
 
                 for (int i = 0; i < PorPeca; i++)
                 {
-                    for (int camada = 0; camada < 3; camada++)
-                    {
-                        var t = new GameObject("Tile_" + i + "_" + camada);
-                        t.transform.SetParent(peca.transform, false);
-                        t.transform.localPosition = new Vector3(i, -camada, 0f);
+                    var t = new GameObject("Tile_" + i);
+                    t.transform.SetParent(peca.transform, false);
+                    t.transform.localPosition = new Vector3(i, 0f, 0f);
 
-                        var sr = t.AddComponent<SpriteRenderer>();
-                        sr.sprite = sprite;
-                        sr.sortingOrder = 6;
-                    }
+                    var sr = t.AddComponent<SpriteRenderer>();
+                    sr.sprite = sprite;
+                    sr.sortingOrder = 6;
                 }
                 pecas[p] = peca.transform;
             }
@@ -140,11 +147,33 @@ public static class CenaDoBicudo
             rola.velocidade = 3.2f;
             rola.pecas = pecas;
             rola.largura = PorPeca;
+
+            // Terra sólida embaixo da fileira que rola, parada.
+            //
+            // Só a fileira de tiles deixaria o vão entre ela e a borda de baixo
+            // aparecendo o céu. Isto é um retângulo, não rola, e some por baixo
+            // da tela em qualquer proporção.
+            MontarTerra(raiz.transform, sprite);
         }
 
         var col = raiz.AddComponent<BoxCollider2D>();
         col.size = new Vector2(80f, 4f);
         col.offset = new Vector2(0f, -1.6f);
+    }
+
+    /// <summary>Bloco de terra parado, do chão para baixo, sem emenda.</summary>
+    static void MontarTerra(Transform pai, Sprite sprite)
+    {
+        var go = new GameObject("Terra");
+        go.transform.SetParent(pai, false);
+        go.transform.localPosition = new Vector3(0f, -6f, 0f);
+
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.drawMode = SpriteDrawMode.Sliced;
+        sr.size = new Vector2(120f, 11f);
+        sr.color = new Color(0.55f, 0.42f, 0.30f);
+        sr.sortingOrder = 5;
     }
 
     static Passaro MontarPassaro()
@@ -171,8 +200,8 @@ public static class CenaDoBicudo
         if (modelo != null) g.modelo = modelo.GetComponent<Cano>();
         else Debug.LogError("[Bicudo] prefab do cano não encontrado");
 
-        g.xDeEntrada = 8f;
-        g.xDeSaida = -9f;
+        g.xDeEntrada = 10f;
+        g.xDeSaida = -11f;
         return g;
     }
 

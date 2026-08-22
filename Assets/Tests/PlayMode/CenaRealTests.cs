@@ -50,6 +50,8 @@ public class CenaRealTests
 
         var gerador = Object.FindObjectOfType<GeradorDeCanos>();
         Assert.IsNotNull(gerador.modelo, "o gerador está sem modelo de cano");
+        Assert.IsNotNull(gerador.passaro,
+            "o gerador não sabe onde está o pássaro: o placar nunca sairia do zero");
         yield return null;
     }
 
@@ -126,6 +128,27 @@ public class CenaRealTests
             "o chão fora da camada consultada pelo pássaro: dá para cair para fora do mundo");
         Assert.IsNotNull(chao.GetComponent<Collider2D>(), "o chão está sem colisor");
         yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator OPlacar_ContaAoPassarOsCanos()
+    {
+        var partida = Object.FindObjectOfType<Partida>();
+        var passaro = Object.FindObjectOfType<Passaro>();
+        var gerador = Object.FindObjectOfType<GeradorDeCanos>();
+        gerador.velocidade = 14f;      // adianta a chegada dos canos
+
+        // O que se mede aqui é o placar, não a colisão. Sem desligar o que
+        // mata, o pássaro morre antes de o primeiro cano chegar e os canos
+        // param junto com a partida: o teste falharia por outro motivo.
+        passaro.camadasQueMatam = 0;
+        passaro.Bater();
+
+        for (float t = 0f; t < 5f && partida.Pontos == 0; t += Time.deltaTime)
+            yield return null;
+
+        Assert.Greater(partida.Pontos, 0,
+            "os canos passaram e o placar não contou nada na cena de verdade");
     }
 
     /// <summary>

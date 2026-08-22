@@ -86,18 +86,11 @@ public static class CenarioDeTeste
         cano.canoDeCima = Filho(go, "CanoDeCima");
         cano.canoDeBaixo = Filho(go, "CanoDeBaixo");
 
-        var portariaGO = new GameObject("Portaria");
-        portariaGO.transform.SetParent(go.transform, false);
-        var portaria = portariaGO.AddComponent<BoxCollider2D>();
-        portaria.isTrigger = true;
-        portaria.size = new Vector2(0.4f, 40f);
-        cano.portaria = portaria;
-
         go.SetActive(true);
         return cano;
     }
 
-    public static GeradorDeCanos CriarGerador(Cano modelo)
+    public static GeradorDeCanos CriarGerador(Cano modelo, Transform passaro = null)
     {
         var go = Novo("Canos");
         go.SetActive(false);
@@ -105,6 +98,7 @@ public static class CenarioDeTeste
         var g = go.AddComponent<GeradorDeCanos>();
         g.modelo = modelo;
         g.quantidade = 4;
+        if (passaro != null) g.passaro = passaro;
         g.xDeEntrada = 8f;
         g.xDeSaida = -9f;
 

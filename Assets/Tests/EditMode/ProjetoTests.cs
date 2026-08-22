@@ -63,7 +63,7 @@ public class ProjetoTests
     }
 
     [Test]
-    public void OCano_TemOsDoisLadosEAPortaria()
+    public void OCano_TemOsDoisLados()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabsDoBicudo.CaminhoCano);
         Assert.IsNotNull(prefab);
@@ -72,8 +72,8 @@ public class ProjetoTests
         Assert.IsNotNull(cano);
         Assert.IsNotNull(cano.canoDeCima, "sem o cano de cima");
         Assert.IsNotNull(cano.canoDeBaixo, "sem o cano de baixo");
-        Assert.IsNotNull(cano.portaria, "sem a portaria o ponto nunca é contado");
-        Assert.IsTrue(cano.portaria.isTrigger, "a portaria precisa ser gatilho, não parede");
+        // Não há gatilho de pontuação: quem conta é o gerador, comparando
+        // posições. Gatilho exigiria colisor no pássaro, que não tem.
     }
 
     [Test]

@@ -140,11 +140,11 @@ public class Interface : MonoBehaviour
                            new Vector2(400f, 120f), Kit.Creme);
 
         // ------------------------------------------------------ tela inicial
-        painelInicial = Kit.Painel(t, "TelaInicial", new Vector2(0f, 40f), new Vector2(460f, 300f));
+        painelInicial = Kit.Painel(t, "TelaInicial", new Vector2(0f, 250f), new Vector2(460f, 230f));
         titulo = Kit.Texto(painelInicial, "Titulo", "BICUDO", 72,
-                           new Vector2(0f, 80f), new Vector2(440f, 100f), Kit.Destaque);
+                           new Vector2(0f, 55f), new Vector2(440f, 100f), Kit.Destaque);
         Kit.Texto(painelInicial, "Subtitulo", "um toque, uma asa", 22,
-                  new Vector2(0f, 20f), new Vector2(440f, 40f), Kit.Apagado);
+                  new Vector2(0f, 5f), new Vector2(440f, 40f), Kit.Apagado);
         dica = Kit.Texto(painelInicial, "Dica",
                          "espaço, seta para cima ou clique\npara bater as asas",
                          24, new Vector2(0f, -60f), new Vector2(440f, 90f), Kit.Creme);
