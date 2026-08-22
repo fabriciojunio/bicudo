@@ -63,10 +63,19 @@ círculo só, o que é barato e não deixa passar.
 
 ### Os canos são reaproveitados
 
-Uma fila fixa de seis pares circula a partida inteira: o que sai pela esquerda
-volta para a direita com uma abertura nova. Criar e destruir um par a cada dois
-segundos funcionaria, mas dá trabalho ao coletor de lixo justamente durante o
-jogo, que é quando um engasgo custa caro.
+Uma fila fixa circula a partida inteira: o que sai pela esquerda volta para a
+direita com uma abertura nova. Criar e destruir um par a cada dois segundos
+funcionaria, mas dá trabalho ao coletor de lixo justamente durante o jogo, que
+é quando um engasgo custa caro.
+
+### O cenário se enquadra ao rodar
+
+A altura que a câmera enxerga é escolhida por nós; a largura sai da proporção
+da tela, que só existe quando o jogo roda. Por isso o ponto em que o cano troca
+de lugar e o ponto em que a peça de chão volta para o fim da fila são
+calculados no `Start`, e não fixados na cena. Com eles fixos, a troca caía
+dentro do campo de visão: o chão sumia pela borda e o cano reaparecia do nada
+à frente do pássaro.
 
 ## Som
 
@@ -125,13 +134,14 @@ Assets/
   Editor/       geradores: arte, prefabs, cena e build
   Prefabs/      pássaro e cano, montados por script
   Scripts/
-    Partida     estado do jogo, placar e recorde
-    Passaro     gravidade, impulso, inclinação e colisão
-    Cano        o par e a portaria que conta o ponto
-    Gerador     a fila de canos que circula
-    Faixa       chão e céu rolando sem emenda
-    Sons        efeitos gerados por síntese
-    UI/         a tela, nos três estados
+    Partida        estado do jogo, placar e recorde
+    Passaro        gravidade, impulso, inclinação e colisão
+    Cano           o par e a trava do ponto
+    Gerador        a fila de canos que circula
+    Faixa          chão e céu rolando sem emenda
+    Enquadramento  quanto a câmera enxerga para cada lado
+    Sons           efeitos gerados por síntese
+    UI/            a tela, nos três estados
   Tests/        EditMode e PlayMode
 docs/           GDD
 ```

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -16,15 +17,78 @@ public class FaixaQueRola : MonoBehaviour
     [Tooltip("Se continua rolando com o jogo parado. O fundo da tela inicial usa isto.")]
     public bool rolaSempre = false;
 
-    [Tooltip("As cópias enfileiradas. Duas bastam se cada uma cobrir a tela.")]
+    [Tooltip("As cópias enfileiradas. Precisam sobrar para além das duas bordas.")]
     public Transform[] pecas;
 
     [Tooltip("Largura de uma cópia, em unidades.")]
     public float largura = 8f;
 
+    [Tooltip("Se calcula sozinha onde repor a peça, pela largura real da tela.")]
+    public bool ajustarPelaCamera = true;
+
+    [Tooltip("X em que a peça volta para o fim da fila. Tem que estar fora da tela.")]
+    public float limiteEsquerdo = -8f;
+
     Partida partida;
 
-    void Start() { partida = Partida.Atual; }
+    void Start()
+    {
+        partida = Partida.Atual;
+        if (ajustarPelaCamera) Enquadrar();
+    }
+
+    /// <summary>
+    /// Escolhe onde repor a peça e alinha a fila a partir daí.
+    ///
+    /// A peça mais à esquerda nunca fica além do limite, então a fila só passa
+    /// a cobrir de limite mais uma largura em diante. Com o limite valendo
+    /// menos uma largura, que era o valor de antes, essa borda caía em zero: a
+    /// metade esquerda da tela ficava sem chão e ele voltava sozinho, quadro a
+    /// quadro, como se o cenário piscasse. O limite tem que descontar também a
+    /// meia tela.
+    /// </summary>
+    public void Enquadrar()
+    {
+        if (pecas == null || pecas.Length == 0 || largura <= 0.01f) return;
+
+        float meia = Enquadramento.MeiaLargura();
+        float alcance = largura * pecas.Length;
+
+        limiteEsquerdo = -(meia + largura);
+
+        // Do limite para a direita a fila cobre o alcance dela. Se for curta
+        // demais para a tela, empurrar o limite só troca o buraco de lado.
+        // Prende no que dá e avisa, em vez de falhar calado.
+        float limiteMinimo = meia - alcance;
+        if (limiteEsquerdo < limiteMinimo)
+        {
+            limiteEsquerdo = limiteMinimo;
+            Debug.LogWarning($"[Bicudo] a faixa {name} tem {pecas.Length} peças de {largura} " +
+                             $"e não cobre os {meia * 2f:0.0} de tela: vai faltar borda.");
+        }
+
+        Reenfileirar();
+    }
+
+    /// <summary>
+    /// Põe as peças em fila a partir do limite, sem esperar a rolagem acertar.
+    ///
+    /// Sem isto os primeiros segundos rodam com o arranjo que veio da cena, e o
+    /// jogador vê o cenário se ajeitando sozinho na abertura.
+    /// </summary>
+    void Reenfileirar()
+    {
+        var ordem = new List<Transform>();
+        foreach (var p in pecas) if (p != null) ordem.Add(p);
+        ordem.Sort((a, b) => a.localPosition.x.CompareTo(b.localPosition.x));
+
+        for (int i = 0; i < ordem.Count; i++)
+        {
+            var pos = ordem[i].localPosition;
+            pos.x = limiteEsquerdo + largura * (i + 1);
+            ordem[i].localPosition = pos;
+        }
+    }
 
     void Update()
     {
@@ -42,7 +106,7 @@ public class FaixaQueRola : MonoBehaviour
 
             // enquanto, e não se: com quadro longo a peça pode passar do
             // limite mais de uma largura de uma vez
-            while (p.localPosition.x <= -largura)
+            while (p.localPosition.x <= limiteEsquerdo)
                 p.localPosition += Vector3.right * volta;
         }
     }
@@ -59,12 +123,28 @@ public class FaixaQueRola : MonoBehaviour
     {
         if (pecas == null || pecas.Length < 2) return 0f;
 
-        var xs = new System.Collections.Generic.List<float>();
+        var xs = new List<float>();
         foreach (var p in pecas) if (p != null) xs.Add(p.localPosition.x);
         xs.Sort();
 
         float maior = 0f;
         for (int i = 1; i < xs.Count; i++) maior = Mathf.Max(maior, xs[i] - xs[i - 1]);
         return maior;
+    }
+
+    /// <summary>Ponto mais à esquerda que a fila desenha, em coordenada de mundo.</summary>
+    public float BordaEsquerda()
+    {
+        float menor = float.MaxValue;
+        foreach (var p in pecas) if (p != null) menor = Mathf.Min(menor, p.position.x);
+        return menor;
+    }
+
+    /// <summary>Ponto mais à direita que a fila desenha, em coordenada de mundo.</summary>
+    public float BordaDireita()
+    {
+        float maior = float.MinValue;
+        foreach (var p in pecas) if (p != null) maior = Mathf.Max(maior, p.position.x);
+        return maior + largura;
     }
 }

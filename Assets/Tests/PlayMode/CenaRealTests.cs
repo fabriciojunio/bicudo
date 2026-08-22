@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -149,6 +150,111 @@ public class CenaRealTests
 
         Assert.Greater(partida.Pontos, 0,
             "os canos passaram e o placar não contou nada na cena de verdade");
+    }
+
+    [UnityTest]
+    public IEnumerator OCenario_NuncaAbreVazioNasBordas()
+    {
+        // Relato do jogador: o chão sumia enquanto ele voava. A causa era a
+        // fila de peças começar a cobrir só a partir do zero, deixando toda a
+        // metade esquerda da tela mostrando céu de tempos em tempos.
+        var passaro = Object.FindObjectOfType<Passaro>();
+        passaro.camadasQueMatam = 0;      // o que se mede é o cenário, não a queda
+        passaro.Bater();
+
+        var chao = GameObject.Find("Chao").GetComponent<FaixaQueRola>();
+        var fundo = GameObject.Find("Fundo").GetComponent<FaixaQueRola>();
+        Assert.IsNotNull(chao, "o chão não rola");
+        Assert.IsNotNull(fundo, "o céu não rola");
+
+        chao.velocidade = 40f;            // apressa as voltas da fila
+        fundo.velocidade = 40f;
+        yield return null;
+
+        float meia = Enquadramento.MeiaLargura();
+
+        for (float t = 0f; t < 6f; t += Time.deltaTime)
+        {
+            yield return null;
+            Assert.LessOrEqual(chao.BordaEsquerda(), -meia + 0.01f, "abriu céu à esquerda do chão");
+            Assert.GreaterOrEqual(chao.BordaDireita(), meia - 0.01f, "abriu céu à direita do chão");
+            Assert.LessOrEqual(fundo.BordaEsquerda(), -meia + 0.01f, "faltou fundo à esquerda");
+            Assert.GreaterOrEqual(fundo.BordaDireita(), meia - 0.01f, "faltou fundo à direita");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator OsCanos_NaTelaInicial_EsperamAVistaELonge()
+    {
+        // Empurrar a entrada dos canos para fora da tela resolveu o cano
+        // aparecendo do nada no meio do voo, mas criou o mesmo defeito na
+        // largada: o primeiro par saía do nada assim que a partida começava.
+        // Por isso eles esperam à vista, parados ao longe.
+        var partida = Object.FindObjectOfType<Partida>();
+        var passaro = Object.FindObjectOfType<Passaro>();
+        var gerador = Object.FindObjectOfType<GeradorDeCanos>();
+
+        Assert.AreEqual(EstadoDaPartida.Esperando, partida.Estado);
+        yield return null;
+
+        foreach (var c in gerador.Pares)
+        {
+            Assert.IsTrue(c.gameObject.activeInHierarchy,
+                "cano escondido na espera: apareceria do nada ao começar a partida");
+            Assert.Greater(c.transform.position.x - passaro.transform.position.x, 6f,
+                "cano parado perto demais do pássaro na largada");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator OsCanos_SoTrocamDeLugarForaDaTela()
+    {
+        // Relato do jogador: ao passar do cano, ele sumia atrás e reaparecia na
+        // frente. O par nunca é destruído, é reaproveitado, e a troca estava
+        // acontecendo em x fixo, dentro do campo de visão.
+        var passaro = Object.FindObjectOfType<Passaro>();
+        var gerador = Object.FindObjectOfType<GeradorDeCanos>();
+
+        passaro.camadasQueMatam = 0;      // o que se mede é a troca, não a morte
+        gerador.velocidade = 20f;         // força várias reposições em poucos segundos
+        passaro.Bater();
+        yield return null;
+
+        float meia = Enquadramento.MeiaLargura();
+        Assert.Less(gerador.xDeSaida, -meia, "a saída dos canos caiu dentro da tela");
+        Assert.Greater(gerador.xDeEntrada, meia, "a entrada dos canos caiu dentro da tela");
+
+        var anterior = new Dictionary<Cano, float>();
+        foreach (var c in gerador.Pares) anterior[c] = c.transform.position.x;
+
+        int trocas = 0;
+        for (float t = 0f; t < 6f; t += Time.deltaTime)
+        {
+            yield return null;
+
+            // Um quadro longo deixa o cano passar da saída antes de ser pego.
+            // Isso é da máquina, não do enquadramento, então entra na conta.
+            float folgaDeQuadro = gerador.velocidade * Time.deltaTime + 0.01f;
+
+            foreach (var c in gerador.Pares)
+            {
+                float agora = c.transform.position.x;
+                float antes = anterior[c];
+
+                if (agora > antes)        // andou para a direita: foi reposto
+                {
+                    trocas++;
+                    Assert.LessOrEqual(antes, gerador.xDeSaida + folgaDeQuadro,
+                        "o cano sumiu antes da saída, com o jogador olhando");
+                    Assert.Greater(agora, meia,
+                        "o cano reapareceu dentro da tela em vez de fora dela");
+                }
+
+                anterior[c] = agora;
+            }
+        }
+
+        Assert.Greater(trocas, 0, "nenhum cano foi reposto: o teste não mediu nada");
     }
 
     /// <summary>

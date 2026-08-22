@@ -20,6 +20,16 @@ public static class CenaDoBicudo
     /// <summary>Onde fica o chão, contado do centro da tela.</summary>
     const float AlturaDoChao = -5.6f;
 
+    /// <summary>
+    /// A tela mais larga que o cenário se compromete a cobrir, em meia largura.
+    ///
+    /// A largura de verdade só existe quando o jogo roda, e quem a mede é o
+    /// Enquadramento. Aqui ela serve para decidir quantas peças recortar, que é
+    /// coisa de montagem e não dá para refazer depois. Vinte e cinco unidades
+    /// dão conta de 32:9 com a altura deste jogo.
+    /// </summary>
+    const float MaiorMeiaLargura = 25f;
+
     [MenuItem("Bicudo/3. Gerar cena", false, 2)]
     public static void Gerar()
     {
@@ -73,7 +83,10 @@ public static class CenaDoBicudo
 
         var raiz = new GameObject("Fundo");
 
-        int quantas = Mathf.Max(3, Mathf.CeilToInt((MeiaAltura * 4f) / larguraNaTela) + 1);
+        // A fila precisa cobrir a tela inteira mais uma peça de cada lado, que
+        // é a folga onde a reposição acontece sem ninguém ver.
+        int quantas = Mathf.Max(3,
+            Mathf.CeilToInt((MaiorMeiaLargura * 2f + larguraNaTela) / larguraNaTela) + 1);
         var pecas = new Transform[quantas];
 
         for (int i = 0; i < pecas.Length; i++)
@@ -89,8 +102,10 @@ public static class CenaDoBicudo
             pecas[i] = go.transform;
         }
 
-        // começa uma peça à esquerda, senão sobra céu vazio na borda
-        raiz.transform.position = new Vector3(-larguraNaTela, 0f, 0f);
+        // O pai fica na origem: quem alinha a fila é o Enquadrar da faixa, ao
+        // rodar, e ele trabalha em coordenada local. Deslocar o pai aqui só
+        // faria a conta dele sair torta pelo mesmo tanto.
+        raiz.transform.position = Vector3.zero;
 
         var rola = raiz.AddComponent<FaixaQueRola>();
         rola.velocidade = 0.6f;
@@ -114,27 +129,31 @@ public static class CenaDoBicudo
 
         if (sprite != null)
         {
-            // A largura da peça tem que passar da metade da tela.
+            // Três peças, não duas.
             //
-            // A reposição devolve a peça para o fim da fila assim que ela anda
-            // uma largura para a esquerda, então a peça mais à esquerda nunca
-            // fica além de -largura. Com peça de 24 e uma tela 21:9, que
-            // enxerga 16,6 para cada lado, sobrava um pedaço sem chão na borda
-            // esquerda. Quarenta cobre até 32:9.
+            // A fila cobre, no pior instante, da borda de reposição para a
+            // direita menos uma largura. Para sobrar tela dos dois lados ela
+            // precisa medir mais que a tela inteira mais uma peça. Com duas de
+            // quarenta a conta não fechava e o chão sumia na borda esquerda a
+            // cada volta, que foi o defeito relatado.
             const int PorPeca = 40;
-            var pecas = new Transform[2];
+            int quantas = Mathf.Max(3,
+                Mathf.CeilToInt((MaiorMeiaLargura * 2f + PorPeca) / PorPeca) + 1);
+            var pecas = new Transform[quantas];
 
             for (int p = 0; p < pecas.Length; p++)
             {
                 var peca = new GameObject("Faixa_" + p);
                 peca.transform.SetParent(raiz.transform, false);
-                peca.transform.localPosition = new Vector3(p * PorPeca - PorPeca, 0f, 0f);
+                peca.transform.localPosition = new Vector3(p * PorPeca, 0f, 0f);
 
                 for (int i = 0; i < PorPeca; i++)
                 {
                     var t = new GameObject("Tile_" + i);
                     t.transform.SetParent(peca.transform, false);
-                    t.transform.localPosition = new Vector3(i, 0f, 0f);
+                    // meio tile adiante: o pivô do desenho é o centro, e assim
+                    // a peça ocupa exatamente de 0 até a largura dela
+                    t.transform.localPosition = new Vector3(i + 0.5f, 0f, 0f);
 
                     var sr = t.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
@@ -157,7 +176,7 @@ public static class CenaDoBicudo
         }
 
         var col = raiz.AddComponent<BoxCollider2D>();
-        col.size = new Vector2(80f, 4f);
+        col.size = new Vector2(MaiorMeiaLargura * 3f, 4f);
         col.offset = new Vector2(0f, -1.6f);
     }
 
@@ -171,7 +190,7 @@ public static class CenaDoBicudo
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = sprite;
         sr.drawMode = SpriteDrawMode.Sliced;
-        sr.size = new Vector2(120f, 11f);
+        sr.size = new Vector2(MaiorMeiaLargura * 3f, 11f);
         sr.color = new Color(0.55f, 0.42f, 0.30f);
         sr.sortingOrder = 5;
     }
@@ -200,8 +219,11 @@ public static class CenaDoBicudo
         if (modelo != null) g.modelo = modelo.GetComponent<Cano>();
         else Debug.LogError("[Bicudo] prefab do cano não encontrado");
 
+        // Valores de partida apenas. Quem manda são o Enquadrar do gerador e a
+        // proporção real da tela, que aqui no editor ainda não existe.
         g.xDeEntrada = 10f;
         g.xDeSaida = -11f;
+        g.distanciaDaLargada = 9f;
         return g;
     }
 

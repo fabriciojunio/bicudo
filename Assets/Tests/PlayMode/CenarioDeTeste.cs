@@ -43,6 +43,28 @@ public static class CenarioDeTeste
         foreach (var g in Object.FindObjectsOfType<GeradorDeCanos>()) Object.DestroyImmediate(g.gameObject);
         foreach (var f in Object.FindObjectsOfType<FaixaQueRola>()) Object.DestroyImmediate(f.gameObject);
         foreach (var i in Object.FindObjectsOfType<Interface>()) Object.DestroyImmediate(i.gameObject);
+
+        // A câmera também: quem mede enquadramento usa Camera.main, e uma
+        // câmera esquecida pela suíte anterior responderia com a proporção
+        // errada, calada.
+        foreach (var c in Object.FindObjectsOfType<Camera>()) Object.DestroyImmediate(c.gameObject);
+    }
+
+    /// <summary>
+    /// Uma câmera com proporção fixa, para medir enquadramento sem depender do
+    /// monitor de quem roda a suíte.
+    /// </summary>
+    public static Camera CriarCamera(float meiaAltura, float proporcao)
+    {
+        var go = Novo("Camera de teste");
+        go.tag = "MainCamera";
+
+        var cam = go.AddComponent<Camera>();
+        cam.orthographic = true;
+        cam.orthographicSize = meiaAltura;
+        cam.aspect = proporcao;          // mandado na mão: ignora a janela real
+        go.transform.position = new Vector3(0f, 0f, -10f);
+        return cam;
     }
 
     public static Partida CriarPartida()
@@ -99,8 +121,14 @@ public static class CenarioDeTeste
         g.modelo = modelo;
         g.quantidade = 4;
         if (passaro != null) g.passaro = passaro;
+
+        // Bancada não tem câmera, e um teste que mede reposição precisa saber
+        // onde ela acontece. Quem confere o enquadramento de verdade é a suíte
+        // que abre a cena do jogo, com a câmera do jogo.
+        g.ajustarPelaCamera = false;
         g.xDeEntrada = 8f;
         g.xDeSaida = -9f;
+        g.distanciaDaLargada = 20f;   // maior que a entrada: vale a entrada
 
         go.SetActive(true);
         return g;
@@ -124,6 +152,8 @@ public static class CenarioDeTeste
         f.pecas = pecas;
         f.largura = largura;
         f.velocidade = 3f;
+        f.ajustarPelaCamera = false;
+        f.limiteEsquerdo = -largura;
 
         go.SetActive(true);
         return f;

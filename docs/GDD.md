@@ -80,18 +80,29 @@ esforço no momento certo.
 
 | | |
 |---|---|
-| Abertura | 2,7 unidades (1,35 para cada lado do centro) |
-| Espaçamento | 3,6 unidades entre um par e o seguinte |
+| Abertura | 5 unidades (2,5 para cada lado do centro) |
+| Espaçamento | 4,2 unidades entre um par e o seguinte |
 | Velocidade | 3,2 unidades por segundo |
-| Altura da passagem | sorteada entre -1,6 e 2,2 |
+| Altura da passagem | sorteada entre -1 e 2,2 |
 
-Seis pares circulam a partida inteira. O que sai pela esquerda volta para a
-direita com uma abertura nova, em vez de ser destruído e recriado.
+O pássaro mede uma unidade, então cabem cinco dele na passagem.
 
-Cada par tem uma portaria no meio da passagem, que conta o ponto. A portaria é
-alta o bastante para o pássaro não passar por fora dela, e conta uma vez só por
-par: subindo e descendo dentro do mesmo vão, um voo trêmulo valeria vários
-pontos.
+Uma fila fixa circula a partida inteira. O que sai pela esquerda volta para a
+direita com uma abertura nova, em vez de ser destruído e recriado. Quantos
+pares a fila tem não é número escolhido a dedo: depende da largura da tela, e
+sai da conta descrita em 8.4.
+
+O ponto é contado por posição, quando o cano fica para trás do pássaro. A
+primeira versão usava uma portaria no meio da passagem e esperava o pássaro
+entrar nela. Nunca disparou: o pássaro não tem colisor, porque detecta batida
+por consulta de círculo, e gatilho do Unity precisa de colisor dos dois lados.
+O placar ficava a partida inteira em zero. Comparar posição não depende de
+física nenhuma e é o mesmo critério que o jogador enxerga.
+
+Na tela inicial os pares esperam parados, à vista, ao longe. Escondê-los
+custava caro dos dois lados: ou o primeiro aparecia do nada no meio da tela ao
+começar a partida, ou esperava fora dela e a partida abria com vários segundos
+de céu vazio.
 
 ## 7. Pontuação
 
@@ -153,6 +164,38 @@ A reposição das faixas é feita em múltiplos exatos da largura, num laço `wh
 e não num `if`: com um quadro longo, a peça pode passar do limite mais de uma
 largura de uma vez.
 
+### 8.4 Onde a peça troca de lugar
+
+A altura visível é escolhida por nós, sete unidades para cada lado do centro. A
+largura não: ela sai da proporção da tela, e proporção só existe quando o jogo
+roda. Números de largura fixados na cena dão certo em um monitor e erram em
+todos os outros.
+
+Foi o que aconteceu. O chão sumia pela borda esquerda e voltava sozinho, e o
+cano desaparecia poucos passos atrás do pássaro para reaparecer do nada à
+frente dele. Nos dois casos a peça continuava sendo reaproveitada como sempre;
+o que estava errado era o lugar onde a troca acontecia, dentro do campo de
+visão.
+
+`Enquadramento.MeiaLargura` mede quanto a câmera enxerga para cada lado. A
+partir dela:
+
+- **Canos:** entram e saem em `meia largura + 2`. A fila precisa de pares
+  suficientes para que o par reposto caia atrás do último, e não dentro da
+  tela: `quantidade × espaçamento` tem que passar da distância entre a entrada
+  e a saída.
+- **Faixas:** a peça volta para o fim da fila em `-(meia largura + largura da
+  peça)`. A peça mais à esquerda nunca passa desse limite, então a fila só
+  cobre de `limite + largura` em diante; com o limite valendo apenas
+  `-largura`, que era o valor antigo, essa borda caía em zero e metade da tela
+  ficava sem chão.
+- **Quantas peças recortar** é decisão de montagem e não dá para refazer ao
+  rodar, então a cena é gerada para a tela mais larga prevista, 32:9.
+
+Se ainda assim a fila for curta demais para a tela, a faixa avisa no console em
+vez de falhar calada, porque o sintoma é o cenário piscando na borda e nada
+apontando para a causa.
+
 ## 9. Áudio
 
 Quatro efeitos, gerados por síntese quando o jogo acorda: bater de asa, ponto,
@@ -183,7 +226,7 @@ baixo.
 3. Encostar em cano ou chão encerra a partida.
 4. Cada par de canos vale um ponto, uma vez só.
 5. O recorde é gravado na máquina e não some ao reiniciar.
-6. Na tela inicial nada mata e não há cano no caminho.
+6. Na tela inicial nada mata e nenhum cano está perto do pássaro.
 7. Não há vida extra, fase, pausa nem limite de tempo.
 
 ## 12. Créditos de arte

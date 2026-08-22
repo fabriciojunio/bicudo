@@ -252,6 +252,48 @@ public class VooTests
             $"um cano só rendeu {partida.Pontos} pontos: a trava não segurou");
     }
 
+    [UnityTest]
+    public IEnumerator Gerador_Enquadrado_TrocaOCanoDeLugarForaDaTela()
+    {
+        // O outro lado do mesmo defeito: em tela larga o cano sumia poucos
+        // passos atrás do pássaro e reaparecia do nada à frente dele, porque a
+        // entrada e a saída estavam presas na cena, em unidades que davam certo
+        // só em 16:9.
+        CenarioDeTeste.CriarPartida();
+        CenarioDeTeste.CriarCamera(meiaAltura: 7f, proporcao: 21f / 9f);
+
+        var modelo = CenarioDeTeste.CriarCano(new Vector2(100f, 0f));
+        var g = CenarioDeTeste.CriarGerador(modelo);
+        g.ajustarPelaCamera = true;
+        yield return null;
+
+        float meia = Enquadramento.MeiaLargura();
+
+        Assert.Less(g.xDeSaida, -meia, "o cano sairia de cena com o jogador olhando");
+        Assert.Greater(g.xDeEntrada, meia, "o cano apareceria já dentro da tela");
+        Assert.GreaterOrEqual(g.quantidade * g.espacamento, g.xDeEntrada - g.xDeSaida,
+            "a fila é curta: o cano reposto cairia dentro da tela mesmo assim");
+    }
+
+    [UnityTest]
+    public IEnumerator Gerador_NaEspera_PoeOPrimeiroCanoNaDistanciaDeLargada()
+    {
+        CenarioDeTeste.CriarPartida();
+        var modelo = CenarioDeTeste.CriarCano(new Vector2(100f, 0f));
+        var g = CenarioDeTeste.CriarGerador(modelo);
+        g.xDeEntrada = 30f;                 // como fica numa tela bem larga
+        g.distanciaDaLargada = 9f;
+        yield return null;
+
+        float menor = float.MaxValue;
+        foreach (var p in g.Pares) menor = Mathf.Min(menor, p.transform.localPosition.x);
+
+        // Sem isto, quanto mais larga a tela, mais tempo de céu vazio antes do
+        // primeiro cano: a espera passaria de cinco segundos em 21:9.
+        Assert.AreEqual(9f, menor, 0.01f,
+            "o primeiro cano ficou esperando na borda de entrada");
+    }
+
     // ----------------------------------------------------------------- cenário
 
     [UnityTest]
@@ -268,6 +310,49 @@ public class VooTests
             Assert.LessOrEqual(f.MaiorVaoEntrePecas(), 6f + 0.5f,
                 "abriu um vão entre as peças: a reposição saiu de múltiplo da largura");
         }
+    }
+
+    [UnityTest]
+    public IEnumerator Faixa_Enquadrada_CobreATelaDePontaAPonta()
+    {
+        // O defeito que este teste guarda: o chão sumia pela borda esquerda e
+        // voltava sozinho enquanto o jogador voava. A peça mais à esquerda
+        // nunca passava de menos uma largura, então a fila começava a cobrir só
+        // a partir do zero, e tudo à esquerda disso ficava mostrando céu.
+        var partida = CenarioDeTeste.CriarPartida();
+        CenarioDeTeste.CriarCamera(meiaAltura: 7f, proporcao: 21f / 9f);
+
+        var f = CenarioDeTeste.CriarFaixa(quantasPecas: 4, largura: 40f);
+        f.ajustarPelaCamera = true;
+        f.velocidade = 40f;               // apressa as voltas da fila
+        yield return null;
+
+        float meia = Enquadramento.MeiaLargura();
+        Assert.Greater(meia, 16f, "a câmera de teste saiu estreita: não mediria nada");
+
+        partida.Comecar();
+
+        for (float t = 0f; t < 5f; t += Time.deltaTime)
+        {
+            yield return null;
+            Assert.LessOrEqual(f.BordaEsquerda(), -meia + 0.01f,
+                "abriu vazio na borda esquerda da tela");
+            Assert.GreaterOrEqual(f.BordaDireita(), meia - 0.01f,
+                "abriu vazio na borda direita da tela");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator Faixa_CurtaDemais_Avisa()
+    {
+        // Falhar calado aqui custa caro: o sintoma é o cenário piscando na
+        // borda, e nada no console apontando para a causa.
+        CenarioDeTeste.CriarCamera(meiaAltura: 7f, proporcao: 21f / 9f);
+        var f = CenarioDeTeste.CriarFaixa(quantasPecas: 2, largura: 4f);
+        f.ajustarPelaCamera = true;
+
+        LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*não cobre.*"));
+        yield return null;
     }
 
     [UnityTest]

@@ -5,8 +5,8 @@ using UnityEngine;
 /// Solta os pares de canos e os reaproveita.
 ///
 /// Mantém uma fila fixa de pares: quando um sai pela esquerda, volta para a
-/// direita com uma abertura nova em vez de ser destruído. Com o espaçamento e
-/// a velocidade do jogo, meia dúzia cobre a tela inteira com folga.
+/// direita com uma abertura nova em vez de ser destruído. Quantos pares a fila
+/// precisa ter depende da largura da tela, e por isso é decidido ao rodar.
 /// </summary>
 public class GeradorDeCanos : MonoBehaviour
 {
@@ -25,11 +25,20 @@ public class GeradorDeCanos : MonoBehaviour
     public float alturaMaxima = 2.2f;
 
     [Header("Cena")]
+    [Tooltip("Se calcula sozinho onde os canos entram e saem, pela largura real da tela.")]
+    public bool ajustarPelaCamera = true;
+
+    [Tooltip("Sobra além da borda da tela: meia largura do cano mais uma folga.")]
+    public float folgaForaDaTela = 2f;
+
     [Tooltip("Onde os pares nascem, à direita da tela.")]
     public float xDeEntrada = 7f;
 
     [Tooltip("Passando disto para a esquerda, o par volta para o fim da fila.")]
     public float xDeSaida = -7f;
+
+    [Tooltip("A que distância o primeiro par espera, na tela inicial.")]
+    public float distanciaDaLargada = 9f;
 
     public Cano modelo;
 
@@ -50,6 +59,10 @@ public class GeradorDeCanos : MonoBehaviour
         partida = Partida.Atual;
         if (partida != null) partida.Mudou += AoMudarEstado;
 
+        // antes de criar a fila: o enquadramento é que diz de quantos pares
+        // ela precisa
+        if (ajustarPelaCamera) Enquadrar();
+
         Criar();
         Recolher();
     }
@@ -57,6 +70,26 @@ public class GeradorDeCanos : MonoBehaviour
     void OnDestroy()
     {
         if (partida != null) partida.Mudou -= AoMudarEstado;
+    }
+
+    /// <summary>
+    /// Põe a entrada e a saída dos canos fora do campo de visão.
+    ///
+    /// Com os dois presos na cena, em tela larga o cano sumia poucos passos
+    /// atrás do pássaro e reaparecia do nada à frente dele. A troca continua a
+    /// mesma; o que muda é ela acontecer onde ninguém vê.
+    /// </summary>
+    public void Enquadrar()
+    {
+        float borda = Enquadramento.MeiaLargura() + folgaForaDaTela;
+        xDeSaida = -borda;
+        xDeEntrada = borda;
+
+        // A fila anda em bloco: o par que sai vai parar atrás do último. Se ela
+        // for curta, esse lugar cai dentro da tela e o defeito volta por outro
+        // caminho, agora do lado direito.
+        int precisa = Mathf.CeilToInt((xDeEntrada - xDeSaida) / espacamento) + 1;
+        quantidade = Mathf.Max(quantidade, precisa);
     }
 
     void AoMudarEstado(EstadoDaPartida estado)
@@ -77,19 +110,23 @@ public class GeradorDeCanos : MonoBehaviour
     }
 
     /// <summary>
-    /// Tira todos os canos da tela.
+    /// Recua todos os canos para a posição de largada.
     ///
     /// Na tela inicial o caminho precisa estar limpo: um par parado na frente
-    /// do pássaro no instante em que a partida começa é uma morte que o
-    /// jogador não teve como evitar.
+    /// do pássaro no instante em que a partida começa é uma morte que o jogador
+    /// não teve como evitar. Mas os pares ficam à vista, parados ao longe, como
+    /// no jogo em que este se inspira. Escondê-los custava caro dos dois lados:
+    /// ou eles apareciam do nada no meio da tela ao começar a partida, ou
+    /// esperavam fora dela e a partida abria com segundos de céu vazio.
     /// </summary>
     public void Recolher()
     {
+        float inicio = Mathf.Min(xDeEntrada, distanciaDaLargada);
+
         for (int i = 0; i < pares.Count; i++)
         {
             var p = pares[i];
-            p.gameObject.SetActive(false);
-            p.transform.localPosition = new Vector3(xDeEntrada + espacamento * i, 0f, 0f);
+            p.transform.localPosition = new Vector3(inicio + espacamento * i, 0f, 0f);
             p.Armar(AlturaSorteada());
         }
     }
@@ -100,8 +137,6 @@ public class GeradorDeCanos : MonoBehaviour
 
         foreach (var p in pares)
         {
-            if (!p.gameObject.activeSelf) p.gameObject.SetActive(true);
-
             p.transform.localPosition += Vector3.left * velocidade * Time.deltaTime;
 
             ConferirPonto(p);
